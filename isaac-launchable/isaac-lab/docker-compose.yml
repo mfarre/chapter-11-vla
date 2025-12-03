@@ -64,7 +64,7 @@ services:
   groot-server:
     container_name: groot-server
     build:
-      context: ../../../Isaac-GR00T
+      context: ../../Isaac-GR00T
       dockerfile: Dockerfile.inference
       network: host
     runtime: nvidia

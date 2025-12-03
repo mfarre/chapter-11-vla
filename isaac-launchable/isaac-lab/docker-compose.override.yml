@@ -20,7 +20,8 @@
 services:
   vscode:
     build:
-      context: ./vscode
+      context: ../..
+      dockerfile: isaac-launchable/isaac-lab/vscode/Dockerfile
       network: host
 
   nginx:

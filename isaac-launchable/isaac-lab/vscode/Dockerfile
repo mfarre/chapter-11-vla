@@ -36,15 +36,15 @@ RUN apt update && \
 
 ENV WORKSPACE_DIR=/workspace
 
-COPY --chown=ubuntu:ubuntu ./README.md ${WORKSPACE_DIR}/README.md
-COPY --chown=ubuntu:ubuntu ./settings.json ${WORKSPACE_DIR}/.vscode/settings.json
+COPY --chown=ubuntu:ubuntu ./isaac-launchable/isaac-lab/vscode/README.md ${WORKSPACE_DIR}/README.md
+COPY --chown=ubuntu:ubuntu ./isaac-launchable/isaac-lab/vscode/settings.json ${WORKSPACE_DIR}/.vscode/settings.json
 
 RUN code-server \
     --install-extension ms-python.python \
     --install-extension ms-toolsai.jupyter \
     --force ${WORKSPACE_DIR}
 
-COPY entrypoint.sh /entrypoint.sh
+COPY ./isaac-launchable/isaac-lab/vscode/entrypoint.sh /entrypoint.sh
 
 # OV Cache Directories
 RUN mkdir -p /home/root/.cache/ov
@@ -53,14 +53,14 @@ RUN chown root:root /home/root/.cache/ov
 RUN chown root:root /home/root/.local/share/ov
 
 # Copy leisaac from local directory
-COPY --chown=ubuntu:ubuntu ../../../leisaac ${WORKSPACE_DIR}/leisaac
+COPY --chown=ubuntu:ubuntu ./leisaac ${WORKSPACE_DIR}/leisaac
 
 # Copy assets from local leisaac-assets directory
-COPY --chown=ubuntu:ubuntu ../../../leisaac-assets/so101_follower.usd ${WORKSPACE_DIR}/leisaac/assets/robots/so101_follower.usd
-COPY --chown=ubuntu:ubuntu ../../../leisaac-assets/kitchen_with_orange.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/kitchen_with_orange.zip
-COPY --chown=ubuntu:ubuntu ../../../leisaac-assets/table_with_cube.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/table_with_cube.zip
-COPY --chown=ubuntu:ubuntu ../../../leisaac-assets/2025-10-27-k0QSo7z0mslightwheel_bedroom.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/lightwheel_bedroom.zip
-COPY --chown=ubuntu:ubuntu ../../../leisaac-assets/2025-07-18-BddImJA8hPlightwheel_toyroom.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/lightwheel_toyroom.zip
+COPY --chown=ubuntu:ubuntu ./leisaac-assets/so101_follower.usd ${WORKSPACE_DIR}/leisaac/assets/robots/so101_follower.usd
+COPY --chown=ubuntu:ubuntu ./leisaac-assets/kitchen_with_orange.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/kitchen_with_orange.zip
+COPY --chown=ubuntu:ubuntu ./leisaac-assets/table_with_cube.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/table_with_cube.zip
+COPY --chown=ubuntu:ubuntu ./leisaac-assets/2025-10-27-k0QSo7z0mslightwheel_bedroom.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/lightwheel_bedroom.zip
+COPY --chown=ubuntu:ubuntu ./leisaac-assets/2025-07-18-BddImJA8hPlightwheel_toyroom.zip ${WORKSPACE_DIR}/leisaac/assets/scenes/lightwheel_toyroom.zip
 
 RUN cd /workspace/leisaac/assets/scenes && \
 	unzip kitchen_with_orange.zip && \
