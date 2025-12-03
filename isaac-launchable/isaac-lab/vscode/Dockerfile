@@ -71,10 +71,6 @@ RUN cd /workspace/leisaac/assets/scenes && \
 	cd .. && \
 	cd ..
 
-# Install leisaac package and dependencies
-RUN cd ${WORKSPACE_DIR}/leisaac && \
-	python3 -m pip install -e source/leisaac && \
-	python3 -m pip install pyzmq
 	
 ENTRYPOINT ["/bin/bash"]
 
