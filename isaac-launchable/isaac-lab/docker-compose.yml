@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+volumes:
+  shared: 
+  ov-cache:
+  ov-local-share:
+  groot-hf-cache:
+
+services:
+
+  # This is the landing container.
+  vscode:
+    container_name: vscode
+    network_mode: "host"
+    runtime: nvidia
+    volumes:
+      - 'shared:/kube'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - "ov-cache:/home/root/.cache/ov:rw"
+      - "ov-local-share:/home/root/.local/share/ov/:rw"
+    privileged: true
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_GPU_CAPABILITIES=all
+      - PUID=0
+      - PGID=0
+      - TZ=Etc/UTC
+      - PASSWORD=password #optional
+      - SUDO_PASSWORD=password #optional
+      - DEFAULT_WORKSPACE=/config/workspace
+      - KUBECONFIG=/kube/config
+    restart: unless-stopped
+
+  nginx:
+    network_mode: "host"
+    depends_on:
+      - vscode
+    restart: unless-stopped
+
+  web-viewer:
+    container_name: web-viewer
+    restart: unless-stopped
+    build:
+      context: ./web-viewer-sample
+      network: host
+    network_mode: "host"
+    environment:
+      - ENV=brev
+
+  groot-server:
+    container_name: groot-server
+    build:
+      context: ../../../Isaac-GR00T
+      dockerfile: Dockerfile.inference
+      network: host
+    runtime: nvidia
+    network_mode: "host"
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_GPU_CAPABILITIES=all
+      # Optional: keep HF cache in the mounted volume
+      - HF_HOME=/workspace/.cache/huggingface
+      - TRANSFORMERS_CACHE=/workspace/.cache/huggingface/transformers
+    volumes:
+      # persists HF model downloads across container restarts
+      - groot-hf-cache:/workspace/.cache/huggingface
+    restart: unless-stopped

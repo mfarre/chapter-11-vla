@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+worker_processes auto;
+pid /etc/nginx/.nginx.pid;
+
+events {
+	worker_connections 768;
+}
+
+http {
+	sendfile on;
+	tcp_nopush on;
+	tcp_nodelay on;
+	client_max_body_size 0;
+	keepalive_timeout 65;
+	types_hash_max_size 2048;
+
+	default_type application/octet-stream;
+
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+		ssl_prefer_server_ciphers on;
+
+	access_log /var/log/access.log;
+	error_log /var/log/error.log;
+
+	gzip on;
+	gzip_disable "msie6";
+
+	server {
+
+		# ${NGINX_LISTEN_PORT} is expected to be an environmental variable. We are providing it via
+		# `docker-compose.override.yml` (for development) and `docker-compose.deployment.yml` (for production).
+		# `nginx.conf` files to not support environmental variable substitution out of the box, so we are using
+		# `envsubst` at container run to perform the substitution for us (see `nginx` service's `command` in
+		# `docker-compose.yml`).
+		listen ${NGINX_LISTEN_PORT} default_server;
+		listen [::]:${NGINX_LISTEN_PORT} default_server;
+
+		location /lab {
+			if ($arg_token) {
+				rewrite ^/lab$ /? permanent;
+			}
+			rewrite ^/lab(.*)$ /$1 permanent;
+		}
+
+		# Inherit the usual suspects for location contexts
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "Upgrade";
+		proxy_set_header Host $http_host;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_buffering off;
+
+		# set initial location as desktop
+		location / {
+			proxy_pass http://localhost:8080;
+		}
+	}
+}

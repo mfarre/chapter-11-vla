@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+volumes:
+  shared:
+  isaac-sim-cache-ov:
+  isaac-sim-cache-pip:
+  isaac-sim-cache-glcache:
+  isaac-sim-cache-computecache:
+  isaac-sim-cache-asset-browser:
+  isaac-sim-logs:
+  isaac-sim-data:
+  isaac-sim-pkg:
+  isaac-sim-documents:
+
+services:
+  isaac-sim:
+    container_name: isaac-sim
+    image: nvcr.io/nvidia/isaac-sim:5.0.0
+    restart: unless-stopped
+    runtime: nvidia
+    network_mode: "host"
+    environment:
+      - ACCEPT_EULA=Y
+    volumes:
+      - isaac-sim-cache-ov:/root/.cache/ov:rw
+      - isaac-sim-cache-pip:/root/.cache/pip:rw
+      - isaac-sim-cache-glcache:/root/.cache/nvidia/GLCache:rw
+      - isaac-sim-cache-computecache:/root/.nv/ComputeCache:rw
+      - isaac-sim-cache-asset-browser:/isaac-sim/exts/isaacsim.asset.browser/cache:rw
+      - isaac-sim-logs:/root/.nvidia-omniverse/logs:rw
+      - isaac-sim-data:/root/.local/share/ov/data:rw
+      - isaac-sim-pkg:/root/.local/share/ov/pkg:rw
+      - isaac-sim-documents:/root/Documents:rw
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  nginx:
+    network_mode: "host"
+    restart: unless-stopped
+
+  web-viewer:
+    container_name: web-viewer
+    build:
+      context: ./web-viewer-sample
+      network: host
+    network_mode: "host"
+    restart: unless-stopped
+    environment:
+      - ENV=brev

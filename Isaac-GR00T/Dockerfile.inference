@@ -1,0 +1,56 @@
+# Dockerfile.inference – GR00T N1.5 server image
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/workspace:${PYTHONPATH}
+ENV HF_HOME=/workspace/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/workspace/.cache/huggingface/transformers
+
+# System deps (matches upstream Dockerfile, trimmed a bit)
+RUN apt-get update && \
+    apt-get install -y \
+        tzdata \
+        netcat-openbsd \
+        dnsutils \
+        git \
+        libgl1-mesa-glx \
+        libvulkan-dev \
+        zip unzip wget curl git-lfs build-essential cmake \
+        vim less sudo htop ca-certificates man tmux \
+        ffmpeg tensorrt \
+        libglib2.0-0 libsm6 libxext6 libxrender-dev && \
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy repo into image (you build from the Isaac-GR00T root)
+COPY . /workspace
+
+RUN pip install --upgrade pip setuptools wheel
+
+# Install GR00T base deps (same as README/Dockerfile)
+RUN pip install -e .[base]
+
+# Resolve conflicts, install flash-attn (matches upstream Dockerfile)
+RUN pip uninstall -y transformer-engine || true && \
+    pip install --no-build-isolation flash-attn==2.7.1.post4 -U --force-reinstall
+
+# OpenCV and torch versions (again, upstream Dockerfile)
+RUN pip uninstall -y opencv-python opencv-python-headless || true && \
+    rm -rf /usr/local/lib/python3.10/dist-packages/cv2 || true && \
+    pip install opencv-python==4.8.0.74
+
+RUN pip install --force-reinstall \
+    torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 numpy==1.26.4
+
+# Re-install GR00T in editable mode without re-pulling deps
+RUN pip install -e . --no-deps
+RUN pip install "accelerate>=0.26.0"
+
+EXPOSE 6006
+
+# Default: run GR00T N1.5 as a ZMQ server on port 5555.
+# You can override --model_path / --data_config / --embodiment_tag from docker-compose.
+CMD ["python","scripts/inference_service.py","--server", "--model-path", "flrs/so101_orange_pick_gr00tn1.5_model","--data-config", "so100_dualcam","--embodiment-tag", "new_embodiment","--denoising-steps", "4","--port", "6006"]
